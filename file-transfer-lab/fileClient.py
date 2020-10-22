@@ -1,11 +1,10 @@
 #! /usr/bin/env python3
-import os, re, socket, sys
-
-sys.path.append("../lib")  # for params
+import socket, sys, re, os
+sys.path.append("../lib")       # for params
 import params
+from framedSock import framedSend
 
 FILE_PATH = "Send/"
-
 
 def client():
     switchesVarDefaults = (
@@ -39,19 +38,24 @@ def client():
 
             if fileName == "exit":
                 sys.exit(0)
-                
+
             else:
                 if not fileName:
                     continue
                 elif os.path.exists(FILE_PATH + fileName):
-                    s.sendall(fileName.encode())
-                    fileContent = open(FILE_PATH + fileName, "rb")
-                    while True:
-                        data = fileContent.read(1024)
-                        s.sendall(data)
-                        if not data:
-                            break
-                    fileContent.close()
+                    file = open(FILE_PATH + fileName, "rb")
+                    fileContent = file.read()
+                    if len(fileContent) <= 0:
+                        print("File is empty")
+                        continue
+                    framedSend(s, fileName, fileContent, debug)
+                    if int(s.recv(1024).decode()): # if the server received the file
+                        print("File %s has been received" % fileName)
+                        sys.exit(0)
+                    else:
+                        print("File %s was not received" % fileName)
+                        sys.exit(1)
+
                 else:
                     print("File %s not found" % fileName)
 
